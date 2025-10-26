@@ -6,6 +6,7 @@ booru_downloader.py
 功能：
  - include / exclude tags
  - ratio 或 min-width/min-height 过滤
+ - score 过滤 (新增)
  - 将每张图片的 tags metadata 同步保存为 txt
  - 简单的速率限制（默认 1 req/sec）
 """
@@ -97,6 +98,15 @@ def get_dimensions(post: dict):
     except Exception:
         return None, None
 
+def get_score(post: dict) -> Optional[int]:
+    for k in ("score", "total_score", "rating_score", "fav_count", "up_score"):
+        if k in post:
+            try:
+                return int(post[k])
+            except Exception:
+                continue
+    return None
+
 # ----- Downloader -----
 def download_file(url: str, dest_path: str, session: requests.Session, headers=None):
     try:
@@ -113,6 +123,7 @@ def download_file(url: str, dest_path: str, session: requests.Session, headers=N
 # ----- Main worker -----
 def fetch_and_download(base_url: str, include_tags: str, exclude_tags: str,
                        ratio: Optional[float], min_w: Optional[int], min_h: Optional[int],
+                       min_score: Optional[int], # <--- 新增
                        out_dir: str, max_images: int, rps: float, per_page: int,
                        api_type: str, username: Optional[str], api_key: Optional[str]):
     ensure_dir(out_dir)
@@ -190,6 +201,9 @@ def fetch_and_download(base_url: str, include_tags: str, exclude_tags: str,
                 continue
             tags = get_tags_from_post(post)
             w,h = get_dimensions(post)
+            
+            # --- 过滤逻辑开始 ---
+            
             # ratio check
             if ratio and w and h:
                 actual_r = float(w) / float(h) if h != 0 else None
@@ -203,6 +217,14 @@ def fetch_and_download(base_url: str, include_tags: str, exclude_tags: str,
             if min_h and (not h or h < min_h):
                 continue
 
+            # <--- 新增的 Score 过滤逻辑 ---
+            if min_score is not None:
+                score = get_score(post)
+                if score is None or score < min_score:
+                    # print(f"[SKIP] score {score} < {min_score}") # (可选) 取消注释以查看跳过日志
+                    continue
+            # <--- 过滤逻辑结束 ---
+
             # build filename (use post id if present)
             post_id = post.get("id") or post.get("post_id") or post.get("file_id") or str(int(time.time()*1000))
             # determine extension
@@ -214,7 +236,7 @@ def fetch_and_download(base_url: str, include_tags: str, exclude_tags: str,
             # skip if exists
             if os.path.exists(img_path):
                 print(f"[SKIP] exists: {img_path}")
-                downloaded += 1
+                downloaded += 1 # 计入总数，但不再下载
                 continue
 
             # download image
@@ -224,12 +246,9 @@ def fetch_and_download(base_url: str, include_tags: str, exclude_tags: str,
                 continue
 
             # save metadata/tags
+            # (这里只写入 tags，符合你的要求)
             with open(txt_path, "w", encoding="utf-8") as f:
-                f.write(f"post_id: {post_id}\n")
-                f.write(f"image_url: {image_url}\n")
-                f.write(f"width: {w}\nheight: {h}\n")
-                f.write("tags:\n")
-                f.write(tags + "\n")
+                f.write(tags)
                 # optionally write raw post json
                 # f.write("\nRAW_JSON:\n")
                 # import json; f.write(json.dumps(post, ensure_ascii=False, indent=2))
@@ -253,6 +272,7 @@ def main():
     p.add_argument("--ratio", default=None, help="Desired ratio, e.g. '16:9' or '1.777'")
     p.add_argument("--min-width", type=int, default=0)
     p.add_argument("--min-height", type=int, default=0)
+    p.add_argument("--min-score", type=int, default=None, help="Minimum score to download (e.g. 50)") # <--- 新增
     p.add_argument("--output", default="./downloads", help="Output dir")
     p.add_argument("--max-images", type=int, default=100, help="Max images to download")
     p.add_argument("--rps", type=float, default=1.0, help="Requests per second to API (default 1.0)")
@@ -280,6 +300,7 @@ def main():
         ratio=ratio,
         min_w=args.min_width or None,
         min_h=args.min_height or None,
+        min_score=args.min_score, # <--- 新增
         out_dir=args.output,
         max_images=args.max_images,
         rps=args.rps,
