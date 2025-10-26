@@ -14,6 +14,11 @@ python booru_downloader.py \
   --api-key  <key> # 你的Api-Key
 ```
 
+推荐不包含Tag
+```
+pokemon signature monochrome comic furry no_humans sign ad character_name dated traditional_media watermark sample_watermark
+```
+
 # 补充
 
 ### 🔒 使用限制与合规说明
