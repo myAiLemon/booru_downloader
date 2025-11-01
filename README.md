@@ -7,11 +7,14 @@ python booru_downloader.py \
   --base-url https://safebooru.org \ # 或者 https://danbooru.donmai.us
   --include-tags "" \ # 下载包含的tag
   --exclude-tags "" \ # 下载不包含的tag
-  --ratio 16:9 \ # 图像比例
+  --ratio 16:9 1:1 \ # 图像比例
   --max-images 200 \ # 最大抓取图像数目
+  --min-score 1 \ # 抓取图像最低评分
   --output ./safebooru_downloads \ # 输出文件夹
   --rps 1 \ # 每秒 1 次请求 每分钟 60 请求
-  --api-key  <key> # 你的Api-Key
+  --api-key  <key> \ # 你的Api-Key
+  --username user_name \ # danbooru需要传入你的用户名
+  --proxy <代理链接> # 可以不添加
 ```
 
 推荐不包含Tag
