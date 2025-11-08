@@ -20,7 +20,7 @@ python booru_downloader.py \
 *highres*
 ## 推荐不包含Tag
 ```
-pokemon+signature+monochrome+comic+furry+no_humans+sign+ad+character_name+dated+traditional_media+watermark+sample_watermark+sex_toy+testicles+censored+erection+translation_request+colored_nipples+ompletely_nude+bestiality+penis+4koma+very_long_tongue+guro+subscribestar_logo+subscribestar_username+speech_bubble
+pokemon+signature+monochrome+comic+furry+no_humans+sign+ad+character_name+dated+traditional_media+watermark+sample_watermark+sex_toy+testicles+censored+erection+translation_request+colored_nipples+ompletely_nude+bestiality+penis+4koma+very_long_tongue+guro+subscribestar_logo+subscribestar_username+speech_bubble+copyright_nameartist_name+artist_name+through_medium+censored+signature+translation_request+english_text+speech_bubble+pokemon_legends:_z-a+pokemon_sv+body_writing+faceless+faceless_male
 ```
 
 # 补充
