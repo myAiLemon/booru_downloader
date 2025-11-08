@@ -16,10 +16,11 @@ python booru_downloader.py \
   --username user_name \ # danbooru需要传入你的用户名
   --proxy <代理链接> # 可以不添加
 ```
-
-推荐不包含Tag
+## 推荐包含tag
+*highres*
+## 推荐不包含Tag
 ```
-pokemon signature monochrome comic furry no_humans sign ad character_name dated traditional_media watermark sample_watermark
+pokemon+signature+monochrome+comic+furry+no_humans+sign+ad+character_name+dated+traditional_media+watermark+sample_watermark+sex_toy+testicles+censored+erection+translation_request+colored_nipples+ompletely_nude+bestiality+penis+4koma+very_long_tongue+guro+subscribestar_logo+subscribestar_username+speech_bubble
 ```
 
 # 补充
