@@ -1,16 +1,5 @@
 #!/usr/bin/env python3
-"""
-booru_downloader.py
 
-支持 Danbooru (/posts.json) 与 Gelbooru/Safebooru DAPI
-功能：
- - include / exclude tags
- - ratio 或 min-width/min-height 过滤 (支持多 ratio)
- - score 过滤
- - 将每张图片的 tags metadata 同步保存为 txt
- - 简单的速率限制（默认 1 req/sec）
- - (新增) 支持 HTTP/SOCKS 代理
-"""
 import argparse
 import os
 import time
@@ -129,12 +118,15 @@ def fetch_and_download(base_url: str, include_tags: str, exclude_tags: str,
                        min_score: Optional[int], 
                        out_dir: str, max_images: int, rps: float, per_page: int,
                        api_type: str, username: Optional[str], api_key: Optional[str],
-                       proxy: Optional[str]): # <--- 新增 proxy 参数
+                       proxy: Optional[str]):
     ensure_dir(out_dir)
     images_dir = os.path.join(out_dir, "images")
     txt_dir = os.path.join(out_dir, "tags")
     ensure_dir(images_dir)
     ensure_dir(txt_dir)
+
+    # 过滤扩展名（修复：确保 .gif 带点号）
+    VIDEO_EXTENSIONS = {'.mp4', '.webm', '.avi', '.mov', '.wmv', '.flv', '.mkv', '.gifv', '.gif'}
 
     session = requests.Session()
     # polite user-agent
@@ -159,7 +151,12 @@ def fetch_and_download(base_url: str, include_tags: str, exclude_tags: str,
     elif api_key and username and api_type != "danbooru":
         auth_params["api_key"] = api_key
         auth_params["user_id"] = username
-        tag_query_parts = []
+
+    tag_query_parts = []
+
+    if api_type != "danbooru" and api_key and username:
+        pass
+
     if include_tags:
         tag_query_parts.append(include_tags.strip())
     if exclude_tags:
@@ -204,13 +201,30 @@ def fetch_and_download(base_url: str, include_tags: str, exclude_tags: str,
         for post in posts:
             if downloaded >= max_images:
                 break
+            
+            # 1. 尝试获取图片URL
             image_url = get_image_url_from_post(post, api_type)
             if not image_url:
+                # 无URL则跳过
                 continue
+            
+            # 2. 解析URL中的扩展名
+            try:
+                # 分割URL参数部分，提取基础URL后获取扩展名
+                ext = os.path.splitext(image_url.split("?")[0])[1].lower()
+            except Exception:
+                # 解析失败则跳过
+                continue
+
+            # 3. 检查是否为视频/动画格式
+            if ext in VIDEO_EXTENSIONS:
+                print(f"[SKIP] Video/Animation: {image_url}")
+                continue
+
             tags = get_tags_from_post(post)
             w,h = get_dimensions(post)
             
-            # --- 过滤逻辑 (保持不变) ---
+            # --- 过滤逻辑 ---
             if ratios and w and h:
                 actual_r = float(w) / float(h) if h != 0 else None
                 if actual_r is None:
@@ -232,9 +246,13 @@ def fetch_and_download(base_url: str, include_tags: str, exclude_tags: str,
                     continue
             # --- 过滤逻辑结束 ---
 
-            # ... (文件名逻辑保持不变) ...
+            # 处理文件名
             post_id = post.get("id") or post.get("post_id") or post.get("file_id") or str(int(time.time()*1000))
-            ext = os.path.splitext(image_url.split("?")[0])[1] or ".jpg"
+            
+            # 确保扩展名存在
+            if not ext:
+                ext = ".jpg"
+                
             image_name = f"{post_id}{ext}"
             img_path = os.path.join(images_dir, image_name)
             txt_path = os.path.join(txt_dir, f"{post_id}.txt")
@@ -244,14 +262,12 @@ def fetch_and_download(base_url: str, include_tags: str, exclude_tags: str,
                 downloaded += 1
                 continue
 
-            # <--- 修改：在 download_file 中不再传入 headers
-            # session 对象会携带 headers 和 proxies
             ok, msg = download_file(image_url, img_path, session)
             if not ok:
                 print(f"[WARN] failed to download {image_url}: {msg}")
                 continue
 
-            # save metadata/tags
+            # 保存标签
             with open(txt_path, "w", encoding="utf-8") as f:
                 f.write(tags)
 
